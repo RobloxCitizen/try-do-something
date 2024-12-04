@@ -1,0 +1,62 @@
+/**
+ * Process2
+ * Класс описывает процесс с параметрами, имеющими интервалы значений и распределения.
+ */
+public class Process2 {
+
+    // Поля класса
+    double[] x_lower = new double[6]; // Нижние границы интервалов для каждого параметра
+    double[] x_upper = new double[6]; // Верхние границы интервалов для каждого параметра
+    CustomDistribution[] probable = new CustomDistribution[6]; // Равномерные распределения для каждого параметра
+    double[] expectedValue = new double[6]; // Ожидаемые значения (результаты) для параметров
+    int ID; // Уникальный идентификатор процесса
+    String description; // Описание процесса
+
+    final static int[] PARAM = {0, 1, 2, 3, 4, 5}; // Индексы параметров
+
+    double aggCycleTime = 0; // Итоговое время выполнения процесса
+    double aggProcessCosts = 0; // Итоговые затраты на выполнение процесса (не используется)
+
+    /**
+     * Конструктор класса Process2.
+     * 
+     * @param ID          Уникальный идентификатор процесса.
+     * @param description Описание процесса.
+     * @param main        Объект для получения данных о границах интервалов и других параметров.
+     * @param rng         Генератор случайных чисел.
+     * @param alpha       Значение альфа-сечения для вычисления границ интервалов.
+     */
+    public Process2(int ID, String description, Main main, Random rng, double alpha) {
+        // Присваиваем ID и описание процессу
+        this.ID = ID;
+        this.description = description;
+
+        // Обработка каждого параметра
+        for (int i = 0; i < PARAM.length; i++) {
+            // Получаем границы интервалов для текущего параметра
+            x_lower[i] = main.lower_alphaCut(alpha, ID, i); // Нижняя граница
+            x_upper[i] = main.upper_alphaCut(alpha, ID, i); // Верхняя граница
+
+            // Определяем интервалы и вероятности
+            double[] intervalstarts = {x_lower[i], x_upper[i]};
+            double[] uniform_probability = {1 / (x_upper[i] - x_lower[i])};
+
+            // Проверяем, есть ли интервал для параметра
+            if ((x_lower[i] == 0) && (x_upper[i] == 0)) {
+                // Если границы равны нулю, параметр не используется
+                expectedValue[i] = 0;
+            } else {
+                // Создаём равномерное распределение
+                probable[i] = new CustomDistribution(intervalstarts, uniform_probability);
+                // Генерируем случайное значение
+                expectedValue[i] = probable[i].get(rng);
+            }
+
+            // Обновляем итоговое время выполнения процесса
+            aggCycleTime += expectedValue[i] * main.configDiff[i];
+        }
+
+        // (Опционально) Рассчитываем затраты на процесс (закомментировано)
+        // aggProcessCosts = aggCycleTime * main.getProcessCosts(ID);
+    }
+}
